@@ -1,4 +1,4 @@
-cask "sourcetree-beta" do
+cask "sourcetree-beta@402" do
   version "4.0.2b6_235"
   sha256 "57144614a0d6e0dea85b464deae3b3cbdceb3e285a28598969cb3a2fe346af76"
 
