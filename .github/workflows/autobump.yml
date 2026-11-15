@@ -39,4 +39,5 @@ jobs:
             echo "$cask: $latest に上げます"
             brew bump-cask-pr --write-only --commit --no-audit --version "$latest" "$cask"
           done
-          git push origin HEAD:main
+          # brew が tap を認証なしの https で clone しているので、push 先にはトークンを付ける
+          git push "https://x-access-token:${HOMEBREW_GITHUB_API_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
