@@ -1,0 +1,42 @@
+# Casks/ の version / sha256 を、配布元の最新版に毎日合わせる。
+# livecheck で最新版を見て、新しければ brew bump-cask-pr --write-only で書き換え、main に直接 commit する。
+name: autobump
+on:
+  schedule:
+    - cron: "0 21 * * *" # 毎日 06:00 JST
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  autobump:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: Set up git
+        uses: Homebrew/actions/git-user-config@main
+
+      # 公式以外の tap は信頼しないと読み込まれない(Tap Trust)
+      - name: Trust this tap
+        run: brew trust --tap huro3h/taps
+
+      - name: Bump casks
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
+        run: |
+          cd "$(brew --repo huro3h/taps)"
+          for path in Casks/*.rb; do
+            cask="huro3h/taps/$(basename "$path" .rb)"
+            info="$(brew livecheck --cask --json "$cask")"
+            latest="$(jq -r '.[0].version.latest' <<<"$info")"
+            if [ "$(jq -r '.[0].version.outdated' <<<"$info")" != true ]; then
+              echo "$cask: 最新です ($latest)"
+              continue
+            fi
+            echo "$cask: $latest に上げます"
+            brew bump-cask-pr --write-only --commit --no-audit --version "$latest" "$cask"
+          done
+          git push origin HEAD:main
